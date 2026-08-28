@@ -94,14 +94,16 @@ export function removeFromHistory(id: string) {
 /* ---------- generation (mock; swappable for a real generator) ---------- */
 
 function pick<T>(list: T[]): T {
-  return list[Math.floor(Math.random() * list.length)];
+  return list[Math.floor(Math.random() * list.length)] as T;
 }
 
 function shuffle<T>(list: T[]): T[] {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+    const tmp = copy[i] as T;
+    copy[i] = copy[j] as T;
+    copy[j] = tmp;
   }
   return copy;
 }
