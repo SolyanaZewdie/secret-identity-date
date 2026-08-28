@@ -145,3 +145,20 @@ export function generateSession(input: GenerateInput): DateSession {
     completedMissions: [],
   };
 }
+
+/* ---------- who is holding the phone ---------- */
+
+const VIEWER_KEY = "lela.viewer";
+
+export function getViewer(): Partner | null {
+  if (!isBrowser()) return null;
+  const v = window.localStorage.getItem(VIEWER_KEY);
+  return v === "A" || v === "B" ? v : null;
+}
+
+export function setViewer(partner: Partner | null) {
+  if (!isBrowser()) return;
+  if (partner) window.localStorage.setItem(VIEWER_KEY, partner);
+  else window.localStorage.removeItem(VIEWER_KEY);
+  window.dispatchEvent(new Event("lela:change"));
+}
