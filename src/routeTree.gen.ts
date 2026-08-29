@@ -10,11 +10,39 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CreateRouteImport } from './routes/create'
+import { Route as DateRouteImport } from './routes/date'
+import { Route as FinaleRouteImport } from './routes/finale'
+import { Route as GeneratingRouteImport } from './routes/generating'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as RecapRouteImport } from './routes/recap'
+import { Route as BeginPartnerRouteImport } from './routes/begin.$partner'
+import { Route as RevealPartnerRouteImport } from './routes/reveal.$partner'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateRoute = CreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DateRoute = DateRouteImport.update({
+  id: '/date',
+  path: '/date',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinaleRoute = FinaleRouteImport.update({
+  id: '/finale',
+  path: '/finale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneratingRoute = GeneratingRouteImport.update({
+  id: '/generating',
+  path: '/generating',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
@@ -22,31 +50,114 @@ const HowItWorksRoute = HowItWorksRouteImport.update({
   path: '/how-it-works',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartnerRoute = PartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecapRoute = RecapRouteImport.update({
+  id: '/recap',
+  path: '/recap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeginPartnerRoute = BeginPartnerRouteImport.update({
+  id: '/begin/$partner',
+  path: '/begin/$partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevealPartnerRoute = RevealPartnerRouteImport.update({
+  id: '/reveal/$partner',
+  path: '/reveal/$partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
+  '/date': typeof DateRoute
+  '/finale': typeof FinaleRoute
+  '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/partner': typeof PartnerRoute
+  '/recap': typeof RecapRoute
+  '/begin/$partner': typeof BeginPartnerRoute
+  '/reveal/$partner': typeof RevealPartnerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
+  '/date': typeof DateRoute
+  '/finale': typeof FinaleRoute
+  '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/partner': typeof PartnerRoute
+  '/recap': typeof RecapRoute
+  '/begin/$partner': typeof BeginPartnerRoute
+  '/reveal/$partner': typeof RevealPartnerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
+  '/date': typeof DateRoute
+  '/finale': typeof FinaleRoute
+  '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/partner': typeof PartnerRoute
+  '/recap': typeof RecapRoute
+  '/begin/$partner': typeof BeginPartnerRoute
+  '/reveal/$partner': typeof RevealPartnerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/how-it-works'
+  fullPaths:
+    | '/'
+    | '/create'
+    | '/date'
+    | '/finale'
+    | '/generating'
+    | '/how-it-works'
+    | '/partner'
+    | '/recap'
+    | '/begin/$partner'
+    | '/reveal/$partner'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/how-it-works'
-  id: '__root__' | '/' | '/how-it-works'
+  to:
+    | '/'
+    | '/create'
+    | '/date'
+    | '/finale'
+    | '/generating'
+    | '/how-it-works'
+    | '/partner'
+    | '/recap'
+    | '/begin/$partner'
+    | '/reveal/$partner'
+  id:
+    | '__root__'
+    | '/'
+    | '/create'
+    | '/date'
+    | '/finale'
+    | '/generating'
+    | '/how-it-works'
+    | '/partner'
+    | '/recap'
+    | '/begin/$partner'
+    | '/reveal/$partner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateRoute: typeof CreateRoute
+  DateRoute: typeof DateRoute
+  FinaleRoute: typeof FinaleRoute
+  GeneratingRoute: typeof GeneratingRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  PartnerRoute: typeof PartnerRoute
+  RecapRoute: typeof RecapRoute
+  BeginPartnerRoute: typeof BeginPartnerRoute
+  RevealPartnerRoute: typeof RevealPartnerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +169,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/date': {
+      id: '/date'
+      path: '/date'
+      fullPath: '/date'
+      preLoaderRoute: typeof DateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finale': {
+      id: '/finale'
+      path: '/finale'
+      fullPath: '/finale'
+      preLoaderRoute: typeof FinaleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generating': {
+      id: '/generating'
+      path: '/generating'
+      fullPath: '/generating'
+      preLoaderRoute: typeof GeneratingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/how-it-works': {
       id: '/how-it-works'
       path: '/how-it-works'
@@ -65,12 +204,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HowItWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partner': {
+      id: '/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recap': {
+      id: '/recap'
+      path: '/recap'
+      fullPath: '/recap'
+      preLoaderRoute: typeof RecapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/begin/$partner': {
+      id: '/begin/$partner'
+      path: '/begin/$partner'
+      fullPath: '/begin/$partner'
+      preLoaderRoute: typeof BeginPartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reveal/$partner': {
+      id: '/reveal/$partner'
+      path: '/reveal/$partner'
+      fullPath: '/reveal/$partner'
+      preLoaderRoute: typeof RevealPartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateRoute: CreateRoute,
+  DateRoute: DateRoute,
+  FinaleRoute: FinaleRoute,
+  GeneratingRoute: GeneratingRoute,
   HowItWorksRoute: HowItWorksRoute,
+  PartnerRoute: PartnerRoute,
+  RecapRoute: RecapRoute,
+  BeginPartnerRoute: BeginPartnerRoute,
+  RevealPartnerRoute: RevealPartnerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

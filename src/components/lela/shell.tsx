@@ -8,7 +8,7 @@ export function Phone({
   className,
 }: {
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <div className="mx-auto w-full max-w-[30rem] px-5 pb-24 pt-6 sm:px-7">
@@ -17,7 +17,7 @@ export function Phone({
   );
 }
 
-export function Wordmark({ className }: { className?: string }) {
+export function Wordmark({ className }: { className?: string | undefined }) {
   return (
     <Link
       to="/"
@@ -38,10 +38,10 @@ export function StepHeader({
   copy,
   back,
 }: {
-  step?: string;
+  step?: string | undefined;
   title: string;
-  copy?: string;
-  back?: { to: string; label: string };
+  copy?: string | undefined;
+  back?: { to: string; label: string } | undefined;
 }) {
   return (
     <header className="mb-8">
@@ -72,7 +72,7 @@ export function Section({
 }: {
   label: string;
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <section className={cn("mt-9", className)}>
@@ -97,11 +97,11 @@ export function ChoiceCard({
 }: {
   emoji: string;
   label: string;
-  note?: string;
-  sub?: string;
+  note?: string | undefined;
+  sub?: string | undefined;
   selected: boolean;
   onSelect: () => void;
-  wide?: boolean;
+  wide?: boolean | undefined;
 }) {
   return (
     <button
@@ -155,10 +155,10 @@ export function PrimaryButton({
   className,
 }: {
   children: ReactNode;
-  onClick?: () => void;
-  type?: "button" | "submit";
-  disabled?: boolean;
-  className?: string;
+  onClick?: (() => void) | undefined;
+  type?: "button" | "submit" | undefined;
+  disabled?: boolean | undefined;
+  className?: string | undefined;
 }) {
   return (
     <button
@@ -182,8 +182,8 @@ export function GhostButton({
   className,
 }: {
   children: ReactNode;
-  onClick?: () => void;
-  className?: string;
+  onClick?: (() => void) | undefined;
+  className?: string | undefined;
 }) {
   return (
     <button

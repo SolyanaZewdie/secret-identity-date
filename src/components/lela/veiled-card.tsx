@@ -7,8 +7,8 @@ export function VeiledCard({
   tilt = "left",
 }: {
   label: string;
-  className?: string;
-  tilt?: "left" | "right";
+  className?: string | undefined;
+  tilt?: "left" | "right" | undefined;
 }) {
   return (
     <div
