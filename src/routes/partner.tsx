@@ -15,7 +15,7 @@ export const Route = createFileRoute("/partner")({
       { property: "og:description", content: "Make sure your partner isn't looking at your screen." },
     ],
   }),
-  component: PartnerSelect;
+  component: PartnerSelect,
 });
 
 function PartnerSelect() {
