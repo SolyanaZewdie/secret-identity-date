@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as DateRouteImport } from './routes/date'
+import { Route as FinaleRouteImport } from './routes/finale'
 import { Route as GeneratingRouteImport } from './routes/generating'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PartnerRouteImport } from './routes/partner'
@@ -31,6 +32,11 @@ const CreateRoute = CreateRouteImport.update({
 const DateRoute = DateRouteImport.update({
   id: '/date',
   path: '/date',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinaleRoute = FinaleRouteImport.update({
+  id: '/finale',
+  path: '/finale',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GeneratingRoute = GeneratingRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
+  '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
+  '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
+  '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/date'
+    | '/finale'
     | '/generating'
     | '/how-it-works'
     | '/partner'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/date'
+    | '/finale'
     | '/generating'
     | '/how-it-works'
     | '/partner'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/date'
+    | '/finale'
     | '/generating'
     | '/how-it-works'
     | '/partner'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   DateRoute: typeof DateRoute
+  FinaleRoute: typeof FinaleRoute
   GeneratingRoute: typeof GeneratingRoute
   HowItWorksRoute: typeof HowItWorksRoute
   PartnerRoute: typeof PartnerRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/date'
       fullPath: '/date'
       preLoaderRoute: typeof DateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finale': {
+      id: '/finale'
+      path: '/finale'
+      fullPath: '/finale'
+      preLoaderRoute: typeof FinaleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/generating': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   DateRoute: DateRoute,
+  FinaleRoute: FinaleRoute,
   GeneratingRoute: GeneratingRoute,
   HowItWorksRoute: HowItWorksRoute,
   PartnerRoute: PartnerRoute,
