@@ -17,7 +17,7 @@ export function Phone({
   );
 }
 
-export function Wordmark({ className }: { className?: string }) {
+export function Wordmark({ className }: { className?: string | undefined }) {
   return (
     <Link
       to="/"
@@ -41,7 +41,7 @@ export function StepHeader({
   step?: string | undefined;
   title: string;
   copy?: string | undefined;
-  back?: { to: string; label: string };
+  back?: { to: string; label: string } | undefined;
 }) {
   return (
     <header className="mb-8">
@@ -155,8 +155,8 @@ export function PrimaryButton({
   className,
 }: {
   children: ReactNode;
-  onClick?: () => void;
-  type?: "button" | "submit";
+  onClick?: (() => void) | undefined;
+  type?: "button" | "submit" | undefined;
   disabled?: boolean | undefined;
   className?: string | undefined;
 }) {
@@ -182,7 +182,7 @@ export function GhostButton({
   className,
 }: {
   children: ReactNode;
-  onClick?: () => void;
+  onClick?: (() => void) | undefined;
   className?: string | undefined;
 }) {
   return (
