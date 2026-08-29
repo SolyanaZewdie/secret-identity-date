@@ -14,6 +14,7 @@ import { Route as CreateRouteImport } from './routes/create'
 import { Route as GeneratingRouteImport } from './routes/generating'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as BeginPartnerRouteImport } from './routes/begin.$partner'
 import { Route as RevealPartnerRouteImport } from './routes/reveal.$partner'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const PartnerRoute = PartnerRouteImport.update({
   path: '/partner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeginPartnerRoute = BeginPartnerRouteImport.update({
+  id: '/begin/$partner',
+  path: '/begin/$partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RevealPartnerRoute = RevealPartnerRouteImport.update({
   id: '/reveal/$partner',
   path: '/reveal/$partner',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
+  '/begin/$partner': typeof BeginPartnerRoute
   '/reveal/$partner': typeof RevealPartnerRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
+  '/begin/$partner': typeof BeginPartnerRoute
   '/reveal/$partner': typeof RevealPartnerRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/generating': typeof GeneratingRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
+  '/begin/$partner': typeof BeginPartnerRoute
   '/reveal/$partner': typeof RevealPartnerRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/generating'
     | '/how-it-works'
     | '/partner'
+    | '/begin/$partner'
     | '/reveal/$partner'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/generating'
     | '/how-it-works'
     | '/partner'
+    | '/begin/$partner'
     | '/reveal/$partner'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/generating'
     | '/how-it-works'
     | '/partner'
+    | '/begin/$partner'
     | '/reveal/$partner'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   GeneratingRoute: typeof GeneratingRoute
   HowItWorksRoute: typeof HowItWorksRoute
   PartnerRoute: typeof PartnerRoute
+  BeginPartnerRoute: typeof BeginPartnerRoute
   RevealPartnerRoute: typeof RevealPartnerRoute
 }
 
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/begin/$partner': {
+      id: '/begin/$partner'
+      path: '/begin/$partner'
+      fullPath: '/begin/$partner'
+      preLoaderRoute: typeof BeginPartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reveal/$partner': {
       id: '/reveal/$partner'
       path: '/reveal/$partner'
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   GeneratingRoute: GeneratingRoute,
   HowItWorksRoute: HowItWorksRoute,
   PartnerRoute: PartnerRoute,
+  BeginPartnerRoute: BeginPartnerRoute,
   RevealPartnerRoute: RevealPartnerRoute,
 }
 export const routeTree = rootRouteImport
