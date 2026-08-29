@@ -7,8 +7,8 @@ export function CharacterCard({
   compact,
 }: {
   character: Character;
-  className?: string;
-  compact?: boolean;
+  className?: string | undefined;
+  compact?: boolean | undefined;
 }) {
   return (
     <article className={cn("card-night animate-veil rounded-3xl p-6", className)}>

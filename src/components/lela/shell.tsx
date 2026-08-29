@@ -8,7 +8,7 @@ export function Phone({
   className,
 }: {
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <div className="mx-auto w-full max-w-[30rem] px-5 pb-24 pt-6 sm:px-7">
@@ -38,9 +38,9 @@ export function StepHeader({
   copy,
   back,
 }: {
-  step?: string;
+  step?: string | undefined;
   title: string;
-  copy?: string;
+  copy?: string | undefined;
   back?: { to: string; label: string };
 }) {
   return (
@@ -72,7 +72,7 @@ export function Section({
 }: {
   label: string;
   children: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <section className={cn("mt-9", className)}>
@@ -97,11 +97,11 @@ export function ChoiceCard({
 }: {
   emoji: string;
   label: string;
-  note?: string;
-  sub?: string;
+  note?: string | undefined;
+  sub?: string | undefined;
   selected: boolean;
   onSelect: () => void;
-  wide?: boolean;
+  wide?: boolean | undefined;
 }) {
   return (
     <button
@@ -157,8 +157,8 @@ export function PrimaryButton({
   children: ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
-  disabled?: boolean;
-  className?: string;
+  disabled?: boolean | undefined;
+  className?: string | undefined;
 }) {
   return (
     <button
@@ -183,7 +183,7 @@ export function GhostButton({
 }: {
   children: ReactNode;
   onClick?: () => void;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <button
