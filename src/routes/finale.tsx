@@ -111,12 +111,6 @@ function Finale() {
           See Tonight's Recap
         </PrimaryButton>
       </div>
-      <button
-        type="button"
-        onClick={() => setSession({ ...session })}
-        className="sr-only"
-        aria-hidden
-      />
     </Phone>
   );
 }
