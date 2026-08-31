@@ -19,6 +19,10 @@ export type PartnerAssignment = {
 export type DateSession = {
   id: string;
   createdAt: string;
+  /** Couple this date belongs to (absent on legacy one-phone sessions). */
+  coupleId?: string;
+  /** Slot of the partner who started the date. */
+  creatorSlot?: Partner;
   vibe: Vibe;
   intensity: Intensity;
   style: DateStyle;
@@ -27,6 +31,10 @@ export type DateSession = {
   B: PartnerAssignment;
   started: boolean;
   ended: boolean;
+  /** Both partners must join before identities are handed out. */
+  joined: { A: boolean; B: boolean };
+  /** Each partner reveals their own character after the date. */
+  revealed: { A: boolean; B: boolean };
   completedMissions: string[];
   rating?: number;
   again?: RepeatAnswer;
@@ -60,8 +68,19 @@ function write(key: string, value: unknown) {
   window.dispatchEvent(new Event("lela:change"));
 }
 
+/** Fills in fields added after the first prototype build. */
+function normalize(session: DateSession | null): DateSession | null {
+  if (!session) return null;
+  return {
+    ...session,
+    joined: session.joined ?? { A: true, B: true },
+    revealed: session.revealed ?? { A: session.ended, B: session.ended },
+    completedMissions: session.completedMissions ?? [],
+  };
+}
+
 export function loadCurrent(): DateSession | null {
-  return read<DateSession>(CURRENT_KEY);
+  return normalize(read<DateSession>(CURRENT_KEY));
 }
 
 export function saveCurrent(session: DateSession) {
@@ -74,12 +93,15 @@ export function clearCurrent() {
   window.dispatchEvent(new Event("lela:change"));
 }
 
-export function loadSaved(): SavedDate[] {
-  return read<SavedDate[]>(SAVED_KEY) ?? [];
+export function loadSaved(coupleId?: string | null): SavedDate[] {
+  const all = (read<SavedDate[]>(SAVED_KEY) ?? []).map((d) => normalize(d) as SavedDate);
+  if (!coupleId) return all;
+  return all.filter((d) => d.coupleId === coupleId);
 }
 
 export function saveToHistory(session: DateSession) {
   const all = loadSaved();
+  
   const next = [{ ...session, savedAt: new Date().toISOString() }, ...all];
   write(SAVED_KEY, next);
 }
@@ -122,7 +144,13 @@ function rollMissions(): string[] {
   return shuffle(MISSIONS).slice(0, count);
 }
 
-export type GenerateInput = { vibe: Vibe; intensity: Intensity; style: DateStyle };
+export type GenerateInput = {
+  vibe: Vibe;
+  intensity: Intensity;
+  style: DateStyle;
+  coupleId?: string;
+  creatorSlot?: Partner;
+};
 
 export function generateSession(input: GenerateInput): DateSession {
   const pool = poolFor(input.vibe);
@@ -134,6 +162,8 @@ export function generateSession(input: GenerateInput): DateSession {
   return {
     id: `${Date.now()}`,
     createdAt: new Date().toISOString(),
+    ...(input.coupleId ? { coupleId: input.coupleId } : {}),
+    ...(input.creatorSlot ? { creatorSlot: input.creatorSlot } : {}),
     vibe: input.vibe,
     intensity: input.intensity,
     style: input.style,
@@ -142,6 +172,10 @@ export function generateSession(input: GenerateInput): DateSession {
     B: { characterId: b.id, missions: rollMissions(), seen: false },
     started: false,
     ended: false,
+    joined: input.creatorSlot
+      ? { A: input.creatorSlot === "A", B: input.creatorSlot === "B" }
+      : { A: true, B: true },
+    revealed: { A: false, B: false },
     completedMissions: [],
   };
 }
