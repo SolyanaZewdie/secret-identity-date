@@ -1,10 +1,17 @@
-import { supabase } from "./supabase";
+import { supabase } from "../supabase";
 
 /**
  * LELA accounts, couples and pairing.
  *
- * Authentication is handled by Supabase.
- * Couples and the prototype pairing layer still use localStorage for now.
+ * Authentication is handled by Supabase Auth.
+ *
+ * Member profiles are stored in the `profiles` table.
+ *
+ * Guests remain local-only for now.
+ *
+ * NOTE:
+ * Couples are still using localStorage in this stage of the migration.
+ * We will move couples to Supabase after authentication is working correctly.
  */
 
 export type AccountKind = "member" | "guest";
@@ -36,6 +43,10 @@ const GUEST_TTL_MS = 1000 * 60 * 60 * 24 * 3;
 
 const isBrowser = () => typeof window !== "undefined";
 
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
 function read<T>(key: string, fallback: T): T {
   if (!isBrowser()) return fallback;
 
@@ -53,19 +64,21 @@ function write(key: string, value: unknown) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* prototype degrades gracefully */
+    /* Storage unavailable — prototype degrades gracefully. */
   }
+
+  notifyChange();
+}
+
+export function notifyChange() {
+  if (!isBrowser()) return;
 
   window.dispatchEvent(new Event("lela:change"));
 }
 
-export function notifyChange() {
-  if (isBrowser()) {
-    window.dispatchEvent(new Event("lela:change"));
-  }
-}
-
-/* ---------------- local prototype collections ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Local prototype couple storage                                             */
+/* -------------------------------------------------------------------------- */
 
 export function allCouples(): Couple[] {
   return read<Couple[]>(COUPLES_KEY, []);
@@ -80,27 +93,31 @@ function putCouple(couple: Couple) {
   write(COUPLES_KEY, next);
 }
 
-/* ---------------- Supabase user ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Supabase profile                                                           */
+/* -------------------------------------------------------------------------- */
 
 /**
- * Converts the Supabase auth user + profile into the User shape
- * expected by the rest of the LELA application.
+ * Loads the currently authenticated Supabase user and their LELA profile.
  */
-async function getSupabaseUser(): Promise<User | null> {
+export async function getSupabaseUser(): Promise<User | null> {
   const {
     data: { user: authUser },
+    error: authError,
   } = await supabase.auth.getUser();
 
-  if (!authUser) return null;
+  if (authError || !authUser) {
+    return null;
+  }
 
-  const { data: profile, error } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("display_name, created_at")
     .eq("id", authUser.id)
     .maybeSingle();
 
-  if (error) {
-    console.error("Failed to load profile:", error);
+  if (profileError) {
+    console.error("Failed to load profile:", profileError);
   }
 
   return {
@@ -116,10 +133,15 @@ async function getSupabaseUser(): Promise<User | null> {
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Current user                                                               */
+/* -------------------------------------------------------------------------- */
+
 /**
- * Returns the currently authenticated Supabase user.
+ * Asynchronously gets the real current user.
  *
- * Guests still use the prototype localStorage system.
+ * Supabase Auth is the source of truth for members.
+ * Guests continue to use localStorage.
  */
 export async function currentUserAsync(): Promise<User | null> {
   const {
@@ -147,10 +169,38 @@ export async function currentUserAsync(): Promise<User | null> {
 }
 
 /**
- * Synchronous compatibility helper.
+ * Returns the current Supabase auth user ID when available.
  *
- * This is retained temporarily because the existing couple prototype
- * expects a synchronous current user ID.
+ * This function is intentionally asynchronous because Supabase Auth
+ * is asynchronous.
+ */
+export async function currentUserIdAsync(): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    return user.id;
+  }
+
+  if (isBrowser()) {
+    const guestId = window.localStorage.getItem(DEVICE_KEY);
+
+    if (guestId?.startsWith("gst_")) {
+      return guestId;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Temporary synchronous compatibility helper.
+ *
+ * Existing prototype couple code still expects a synchronous user ID.
+ *
+ * For Supabase members, the ID is mirrored into DEVICE_KEY after
+ * successful authentication. Supabase remains the real source of truth.
  */
 export function currentUserId(): string | null {
   if (!isBrowser()) return null;
@@ -159,10 +209,10 @@ export function currentUserId(): string | null {
 }
 
 /**
- * Synchronous compatibility helper.
+ * Temporary synchronous compatibility helper.
  *
- * Supabase-authenticated users are represented by DEVICE_KEY after
- * successful authentication. Guest users continue to use the same key.
+ * Guests can be returned synchronously.
+ * Supabase members should use currentUserAsync().
  */
 export function currentUser(): User | null {
   if (!isBrowser()) return null;
@@ -183,6 +233,12 @@ export function currentUser(): User | null {
   return null;
 }
 
+/**
+ * Mirrors the authenticated user ID locally for the existing prototype
+ * couple layer.
+ *
+ * This does NOT replace Supabase Auth.
+ */
 export function setCurrentUser(id: string | null) {
   if (!isBrowser()) return;
 
@@ -195,11 +251,19 @@ export function setCurrentUser(id: string | null) {
   notifyChange();
 }
 
-/* ---------------- sign up / sign in ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Sign up                                                                    */
+/* -------------------------------------------------------------------------- */
 
 export type AuthResult =
-  | { ok: true; user: User }
-  | { ok: false; error: string };
+  | {
+      ok: true;
+      user: User;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 export async function signUp(input: {
   name: string;
@@ -254,20 +318,27 @@ export async function signUp(input: {
     };
   }
 
-  /**
-   * Create the user's profile.
+  /*
+   * The profiles table already exists.
    *
-   * We do this here instead of relying on a database trigger,
-   * because the profiles table already exists.
+   * We create/update the profile here rather than creating another
+   * database table or trigger.
    */
   const { error: profileError } = await supabase
     .from("profiles")
-    .upsert({
-      id: data.user.id,
-      display_name: name,
-    });
+    .upsert(
+      {
+        id: data.user.id,
+        display_name: name,
+      },
+      {
+        onConflict: "id",
+      },
+    );
 
   if (profileError) {
+    console.error("Failed to create profile:", profileError);
+
     return {
       ok: false,
       error: profileError.message,
@@ -284,17 +355,37 @@ export async function signUp(input: {
 
   setCurrentUser(user.id);
 
+  notifyChange();
+
   return {
     ok: true,
     user,
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Sign in                                                                    */
+/* -------------------------------------------------------------------------- */
+
 export async function signIn(
   email: string,
   password: string,
 ): Promise<AuthResult> {
   const cleanEmail = email.trim().toLowerCase();
+
+  if (!cleanEmail) {
+    return {
+      ok: false,
+      error: "Enter your email.",
+    };
+  }
+
+  if (!password) {
+    return {
+      ok: false,
+      error: "Enter your password.",
+    };
+  }
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: cleanEmail,
@@ -315,6 +406,41 @@ export async function signIn(
     };
   }
 
+  /*
+   * Make sure a profile exists.
+   *
+   * This also makes the application resilient if a user was created
+   * before the profile creation logic existed.
+   */
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, created_at")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    const displayName =
+      data.user.user_metadata?.display_name ||
+      data.user.email?.split("@")[0] ||
+      "LELA member";
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: data.user.id,
+          display_name: displayName,
+        },
+        {
+          onConflict: "id",
+        },
+      );
+
+    if (profileError) {
+      console.error("Failed to create missing profile:", profileError);
+    }
+  }
+
   const user = await getSupabaseUser();
 
   if (!user) {
@@ -326,18 +452,33 @@ export async function signIn(
 
   setCurrentUser(user.id);
 
+  notifyChange();
+
   return {
     ok: true,
     user,
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Sign out                                                                   */
+/* -------------------------------------------------------------------------- */
+
 export async function signOut() {
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Supabase sign out failed:", error);
+  }
+
   setCurrentUser(null);
+
+  notifyChange();
 }
 
-/* ---------------- guest ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Guest                                                                      */
+/* -------------------------------------------------------------------------- */
 
 const guestId = () =>
   `gst_${Date.now().toString(36)}${Math.random()
@@ -358,10 +499,7 @@ export function createGuest(name = "Guest"): User {
 }
 
 /**
- * Turns the signed-in guest into a member.
- *
- * This now creates a real Supabase account instead of storing
- * the password in localStorage.
+ * Converts the local guest into a real Supabase member account.
  */
 export async function convertGuest(input: {
   name: string;
@@ -384,7 +522,9 @@ export async function convertGuest(input: {
   });
 }
 
-/* ---------------- couples & pairing ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Couples                                                                    */
+/* -------------------------------------------------------------------------- */
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -444,9 +584,10 @@ export function slotOf(
   return null;
 }
 
-/**
- * Creates (or reuses) the couple invitation for the current user.
- */
+/* -------------------------------------------------------------------------- */
+/* Invite creation                                                            */
+/* -------------------------------------------------------------------------- */
+
 export function createInvite(): Couple | null {
   const me = currentUser();
 
@@ -497,11 +638,26 @@ export function refreshInvite(): Couple | null {
   return createInvite();
 }
 
+/* -------------------------------------------------------------------------- */
+/* Invite lookup                                                              */
+/* -------------------------------------------------------------------------- */
+
 export type InviteLookup =
-  | { state: "invalid" }
-  | { state: "expired"; couple: Couple }
-  | { state: "full"; couple: Couple }
-  | { state: "mine"; couple: Couple }
+  | {
+      state: "invalid";
+    }
+  | {
+      state: "expired";
+      couple: Couple;
+    }
+  | {
+      state: "full";
+      couple: Couple;
+    }
+  | {
+      state: "mine";
+      couple: Couple;
+    }
   | {
       state: "open";
       couple: Couple;
@@ -518,7 +674,9 @@ export function lookupInvite(
   );
 
   if (!couple) {
-    return { state: "invalid" };
+    return {
+      state: "invalid",
+    };
   }
 
   if (isExpired(couple)) {
@@ -547,16 +705,41 @@ export function lookupInvite(
     };
   }
 
+  /*
+   * Host information is optional because the host may now be a
+   * Supabase-authenticated member rather than a localStorage user.
+   */
+  let host: User | null = null;
+
+  if (couple.aId.startsWith("gst_")) {
+    host = {
+      id: couple.aId,
+      name: "Guest",
+      kind: "guest",
+      createdAt: new Date().toISOString(),
+    };
+  }
+
   return {
     state: "open",
     couple,
-    host: null,
+    host,
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Join couple                                                                */
+/* -------------------------------------------------------------------------- */
+
 export type JoinResult =
-  | { ok: true; couple: Couple }
-  | { ok: false; error: string };
+  | {
+      ok: true;
+      couple: Couple;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 export function joinCouple(
   rawCode: string,
@@ -622,6 +805,10 @@ export function joinCouple(
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Partner                                                                    */
+/* -------------------------------------------------------------------------- */
+
 export function partnerOf(
   couple: Couple | null,
   userId: string | null,
@@ -644,8 +831,18 @@ export function partnerOf(
     };
   }
 
+  /*
+   * Supabase members cannot be synchronously loaded here.
+   *
+   * The useAccount hook will handle the authenticated member
+   * separately in the next migration step.
+   */
   return null;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Connection state                                                           */
+/* -------------------------------------------------------------------------- */
 
 export function isConnected(
   couple: Couple | null,
@@ -656,6 +853,10 @@ export function isConnected(
       !isExpired(couple),
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Leave couple                                                               */
+/* -------------------------------------------------------------------------- */
 
 export function leaveCouple() {
   const me = currentUserId();
@@ -694,7 +895,9 @@ export function leaveCouple() {
   ]);
 }
 
-/* ---------------- pairing links ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Pairing links                                                              */
+/* -------------------------------------------------------------------------- */
 
 export function joinUrl(code: string): string {
   const origin = isBrowser()
@@ -708,7 +911,9 @@ export function inviteMessage(code: string): string {
   return `I made us a LELA date. Join me — we each get a secret character and find out at the table. ${joinUrl(code)} (code ${code})`;
 }
 
-/* ---------------- prototype device switcher ---------------- */
+/* -------------------------------------------------------------------------- */
+/* Prototype device switcher                                                  */
+/* -------------------------------------------------------------------------- */
 
 export function devModeEnabled(): boolean {
   if (!isBrowser()) return false;
@@ -729,6 +934,10 @@ export function setDevMode(on: boolean) {
 
   notifyChange();
 }
+
+/* -------------------------------------------------------------------------- */
+/* Reset                                                                      */
+/* -------------------------------------------------------------------------- */
 
 export function resetEverything() {
   if (!isBrowser()) return;
