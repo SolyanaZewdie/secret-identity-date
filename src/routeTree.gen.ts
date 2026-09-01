@@ -15,15 +15,20 @@ import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as DateRouteImport } from './routes/date'
 import { Route as DatesRouteImport } from './routes/dates'
+import { Route as DevRouteImport } from './routes/dev'
 import { Route as FinaleRouteImport } from './routes/finale'
 import { Route as GeneratingRouteImport } from './routes/generating'
 import { Route as GuestRouteImport } from './routes/guest'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as InviteRouteImport } from './routes/invite'
+import { Route as KeepRouteImport } from './routes/keep'
 import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecapRouteImport } from './routes/recap'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as WaitingRouteImport } from './routes/waiting'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as BeginPartnerRouteImport } from './routes/begin.$partner'
 import { Route as JoinIndexRouteImport } from './routes/join.index'
@@ -60,6 +65,11 @@ const DatesRoute = DatesRouteImport.update({
   path: '/dates',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevRoute = DevRouteImport.update({
+  id: '/dev',
+  path: '/dev',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FinaleRoute = FinaleRouteImport.update({
   id: '/finale',
   path: '/finale',
@@ -75,6 +85,11 @@ const GuestRoute = GuestRouteImport.update({
   path: '/guest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
   id: '/how-it-works',
   path: '/how-it-works',
@@ -85,9 +100,19 @@ const InviteRoute = InviteRouteImport.update({
   path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KeepRoute = KeepRouteImport.update({
+  id: '/keep',
+  path: '/keep',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PartnerRoute = PartnerRouteImport.update({
   id: '/partner',
   path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecapRoute = RecapRouteImport.update({
@@ -103,6 +128,11 @@ const SigninRoute = SigninRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WaitingRoute = WaitingRouteImport.update({
+  id: '/waiting',
+  path: '/waiting',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -138,15 +168,20 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
   '/dates': typeof DatesRoute
+  '/dev': typeof DevRoute
   '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
   '/guest': typeof GuestRoute
+  '/home': typeof HomeRoute
   '/how-it-works': typeof HowItWorksRoute
   '/invite': typeof InviteRoute
+  '/keep': typeof KeepRoute
   '/partner': typeof PartnerRoute
+  '/profile': typeof ProfileRoute
   '/recap': typeof RecapRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/waiting': typeof WaitingRoute
   '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
   '/join/$code': typeof JoinCodeRoute
@@ -160,15 +195,20 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
   '/dates': typeof DatesRoute
+  '/dev': typeof DevRoute
   '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
   '/guest': typeof GuestRoute
+  '/home': typeof HomeRoute
   '/how-it-works': typeof HowItWorksRoute
   '/invite': typeof InviteRoute
+  '/keep': typeof KeepRoute
   '/partner': typeof PartnerRoute
+  '/profile': typeof ProfileRoute
   '/recap': typeof RecapRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/waiting': typeof WaitingRoute
   '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
   '/join/$code': typeof JoinCodeRoute
@@ -183,15 +223,20 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
   '/dates': typeof DatesRoute
+  '/dev': typeof DevRoute
   '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
   '/guest': typeof GuestRoute
+  '/home': typeof HomeRoute
   '/how-it-works': typeof HowItWorksRoute
   '/invite': typeof InviteRoute
+  '/keep': typeof KeepRoute
   '/partner': typeof PartnerRoute
+  '/profile': typeof ProfileRoute
   '/recap': typeof RecapRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
+  '/waiting': typeof WaitingRoute
   '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
   '/join/$code': typeof JoinCodeRoute
@@ -207,15 +252,20 @@ export interface FileRouteTypes {
     | '/create'
     | '/date'
     | '/dates'
+    | '/dev'
     | '/finale'
     | '/generating'
     | '/guest'
+    | '/home'
     | '/how-it-works'
     | '/invite'
+    | '/keep'
     | '/partner'
+    | '/profile'
     | '/recap'
     | '/signin'
     | '/signup'
+    | '/waiting'
     | '/welcome'
     | '/begin/$partner'
     | '/join/$code'
@@ -229,15 +279,20 @@ export interface FileRouteTypes {
     | '/create'
     | '/date'
     | '/dates'
+    | '/dev'
     | '/finale'
     | '/generating'
     | '/guest'
+    | '/home'
     | '/how-it-works'
     | '/invite'
+    | '/keep'
     | '/partner'
+    | '/profile'
     | '/recap'
     | '/signin'
     | '/signup'
+    | '/waiting'
     | '/welcome'
     | '/begin/$partner'
     | '/join/$code'
@@ -251,15 +306,20 @@ export interface FileRouteTypes {
     | '/create'
     | '/date'
     | '/dates'
+    | '/dev'
     | '/finale'
     | '/generating'
     | '/guest'
+    | '/home'
     | '/how-it-works'
     | '/invite'
+    | '/keep'
     | '/partner'
+    | '/profile'
     | '/recap'
     | '/signin'
     | '/signup'
+    | '/waiting'
     | '/welcome'
     | '/begin/$partner'
     | '/join/$code'
@@ -274,15 +334,20 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   DateRoute: typeof DateRoute
   DatesRoute: typeof DatesRoute
+  DevRoute: typeof DevRoute
   FinaleRoute: typeof FinaleRoute
   GeneratingRoute: typeof GeneratingRoute
   GuestRoute: typeof GuestRoute
+  HomeRoute: typeof HomeRoute
   HowItWorksRoute: typeof HowItWorksRoute
   InviteRoute: typeof InviteRoute
+  KeepRoute: typeof KeepRoute
   PartnerRoute: typeof PartnerRoute
+  ProfileRoute: typeof ProfileRoute
   RecapRoute: typeof RecapRoute
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
+  WaitingRoute: typeof WaitingRoute
   WelcomeRoute: typeof WelcomeRoute
   BeginPartnerRoute: typeof BeginPartnerRoute
   JoinCodeRoute: typeof JoinCodeRoute
@@ -334,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev': {
+      id: '/dev'
+      path: '/dev'
+      fullPath: '/dev'
+      preLoaderRoute: typeof DevRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/finale': {
       id: '/finale'
       path: '/finale'
@@ -355,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/how-it-works': {
       id: '/how-it-works'
       path: '/how-it-works'
@@ -369,11 +448,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/keep': {
+      id: '/keep'
+      path: '/keep'
+      fullPath: '/keep'
+      preLoaderRoute: typeof KeepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/partner': {
       id: '/partner'
       path: '/partner'
       fullPath: '/partner'
       preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recap': {
@@ -395,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/waiting': {
+      id: '/waiting'
+      path: '/waiting'
+      fullPath: '/waiting'
+      preLoaderRoute: typeof WaitingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welcome': {
@@ -442,15 +542,20 @@ const rootRouteChildren: RootRouteChildren = {
   CreateRoute: CreateRoute,
   DateRoute: DateRoute,
   DatesRoute: DatesRoute,
+  DevRoute: DevRoute,
   FinaleRoute: FinaleRoute,
   GeneratingRoute: GeneratingRoute,
   GuestRoute: GuestRoute,
+  HomeRoute: HomeRoute,
   HowItWorksRoute: HowItWorksRoute,
   InviteRoute: InviteRoute,
+  KeepRoute: KeepRoute,
   PartnerRoute: PartnerRoute,
+  ProfileRoute: ProfileRoute,
   RecapRoute: RecapRoute,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
+  WaitingRoute: WaitingRoute,
   WelcomeRoute: WelcomeRoute,
   BeginPartnerRoute: BeginPartnerRoute,
   JoinCodeRoute: JoinCodeRoute,
