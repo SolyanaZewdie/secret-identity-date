@@ -90,7 +90,7 @@ function Landing() {
           </Link>
 
           <Link
-            to="/login"
+            to="/signin"
             className="text-xs font-semibold tracking-[0.16em] uppercase text-foreground/90 transition-colors hover:text-ember"
           >
             Log in
