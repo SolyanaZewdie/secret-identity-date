@@ -10,23 +10,39 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConnectedRouteImport } from './routes/connected'
+import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as DateRouteImport } from './routes/date'
 import { Route as DatesRouteImport } from './routes/dates'
 import { Route as FinaleRouteImport } from './routes/finale'
 import { Route as GeneratingRouteImport } from './routes/generating'
+import { Route as GuestRouteImport } from './routes/guest'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as RecapRouteImport } from './routes/recap'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as BeginPartnerRouteImport } from './routes/begin.$partner'
+import { Route as JoinIndexRouteImport } from './routes/join.index'
+import { Route as JoinCodeRouteImport } from './routes/join.$code'
 import { Route as RevealPartnerRouteImport } from './routes/reveal.$partner'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectedRoute = ConnectedRouteImport.update({
+  id: '/connected',
+  path: '/connected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoupleRoute = CoupleRouteImport.update({
+  id: '/couple',
+  path: '/couple',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreateRoute = CreateRouteImport.update({
@@ -54,9 +70,19 @@ const GeneratingRoute = GeneratingRouteImport.update({
   path: '/generating',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuestRoute = GuestRouteImport.update({
+  id: '/guest',
+  path: '/guest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
   id: '/how-it-works',
   path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnerRoute = PartnerRouteImport.update({
@@ -89,6 +115,16 @@ const BeginPartnerRoute = BeginPartnerRouteImport.update({
   path: '/begin/$partner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinIndexRoute = JoinIndexRouteImport.update({
+  id: '/join/',
+  path: '/join/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinCodeRoute = JoinCodeRouteImport.update({
+  id: '/join/$code',
+  path: '/join/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RevealPartnerRoute = RevealPartnerRouteImport.update({
   id: '/reveal/$partner',
   path: '/reveal/$partner',
@@ -97,119 +133,161 @@ const RevealPartnerRoute = RevealPartnerRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/connected': typeof ConnectedRoute
+  '/couple': typeof CoupleRoute
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
   '/dates': typeof DatesRoute
   '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
+  '/guest': typeof GuestRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/invite': typeof InviteRoute
   '/partner': typeof PartnerRoute
   '/recap': typeof RecapRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
+  '/join/$code': typeof JoinCodeRoute
   '/reveal/$partner': typeof RevealPartnerRoute
+  '/join/': typeof JoinIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/connected': typeof ConnectedRoute
+  '/couple': typeof CoupleRoute
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
   '/dates': typeof DatesRoute
   '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
+  '/guest': typeof GuestRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/invite': typeof InviteRoute
   '/partner': typeof PartnerRoute
   '/recap': typeof RecapRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
+  '/join/$code': typeof JoinCodeRoute
   '/reveal/$partner': typeof RevealPartnerRoute
+  '/join': typeof JoinIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/connected': typeof ConnectedRoute
+  '/couple': typeof CoupleRoute
   '/create': typeof CreateRoute
   '/date': typeof DateRoute
   '/dates': typeof DatesRoute
   '/finale': typeof FinaleRoute
   '/generating': typeof GeneratingRoute
+  '/guest': typeof GuestRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/invite': typeof InviteRoute
   '/partner': typeof PartnerRoute
   '/recap': typeof RecapRoute
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
+  '/join/$code': typeof JoinCodeRoute
   '/reveal/$partner': typeof RevealPartnerRoute
+  '/join/': typeof JoinIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/connected'
+    | '/couple'
     | '/create'
     | '/date'
     | '/dates'
     | '/finale'
     | '/generating'
+    | '/guest'
     | '/how-it-works'
+    | '/invite'
     | '/partner'
     | '/recap'
     | '/signin'
     | '/signup'
     | '/welcome'
     | '/begin/$partner'
+    | '/join/$code'
     | '/reveal/$partner'
+    | '/join/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/connected'
+    | '/couple'
     | '/create'
     | '/date'
     | '/dates'
     | '/finale'
     | '/generating'
+    | '/guest'
     | '/how-it-works'
+    | '/invite'
     | '/partner'
     | '/recap'
     | '/signin'
     | '/signup'
     | '/welcome'
     | '/begin/$partner'
+    | '/join/$code'
     | '/reveal/$partner'
+    | '/join'
   id:
     | '__root__'
     | '/'
+    | '/connected'
+    | '/couple'
     | '/create'
     | '/date'
     | '/dates'
     | '/finale'
     | '/generating'
+    | '/guest'
     | '/how-it-works'
+    | '/invite'
     | '/partner'
     | '/recap'
     | '/signin'
     | '/signup'
     | '/welcome'
     | '/begin/$partner'
+    | '/join/$code'
     | '/reveal/$partner'
+    | '/join/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConnectedRoute: typeof ConnectedRoute
+  CoupleRoute: typeof CoupleRoute
   CreateRoute: typeof CreateRoute
   DateRoute: typeof DateRoute
   DatesRoute: typeof DatesRoute
   FinaleRoute: typeof FinaleRoute
   GeneratingRoute: typeof GeneratingRoute
+  GuestRoute: typeof GuestRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  InviteRoute: typeof InviteRoute
   PartnerRoute: typeof PartnerRoute
   RecapRoute: typeof RecapRoute
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
   WelcomeRoute: typeof WelcomeRoute
   BeginPartnerRoute: typeof BeginPartnerRoute
+  JoinCodeRoute: typeof JoinCodeRoute
   RevealPartnerRoute: typeof RevealPartnerRoute
+  JoinIndexRoute: typeof JoinIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -219,6 +297,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connected': {
+      id: '/connected'
+      path: '/connected'
+      fullPath: '/connected'
+      preLoaderRoute: typeof ConnectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/couple': {
+      id: '/couple'
+      path: '/couple'
+      fullPath: '/couple'
+      preLoaderRoute: typeof CoupleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/create': {
@@ -256,11 +348,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GeneratingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guest': {
+      id: '/guest'
+      path: '/guest'
+      fullPath: '/guest'
+      preLoaderRoute: typeof GuestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/how-it-works': {
       id: '/how-it-works'
       path: '/how-it-works'
       fullPath: '/how-it-works'
       preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partner': {
@@ -305,6 +411,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeginPartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join/': {
+      id: '/join/'
+      path: '/join'
+      fullPath: '/join/'
+      preLoaderRoute: typeof JoinIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join/$code': {
+      id: '/join/$code'
+      path: '/join/$code'
+      fullPath: '/join/$code'
+      preLoaderRoute: typeof JoinCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reveal/$partner': {
       id: '/reveal/$partner'
       path: '/reveal/$partner'
@@ -317,19 +437,25 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConnectedRoute: ConnectedRoute,
+  CoupleRoute: CoupleRoute,
   CreateRoute: CreateRoute,
   DateRoute: DateRoute,
   DatesRoute: DatesRoute,
   FinaleRoute: FinaleRoute,
   GeneratingRoute: GeneratingRoute,
+  GuestRoute: GuestRoute,
   HowItWorksRoute: HowItWorksRoute,
+  InviteRoute: InviteRoute,
   PartnerRoute: PartnerRoute,
   RecapRoute: RecapRoute,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
   WelcomeRoute: WelcomeRoute,
   BeginPartnerRoute: BeginPartnerRoute,
+  JoinCodeRoute: JoinCodeRoute,
   RevealPartnerRoute: RevealPartnerRoute,
+  JoinIndexRoute: JoinIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
