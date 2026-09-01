@@ -1,3 +1,4 @@
+
 import { supabase } from "../supabase";
 
 /**
@@ -77,6 +78,37 @@ export function notifyChange() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Users                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Compatibility helper for the prototype device switcher.
+ *
+ * Supabase members are not stored as a local collection anymore.
+ * The only local user that can be reconstructed synchronously is a guest.
+ *
+ * The currently authenticated Supabase member is handled asynchronously
+ * through currentUserAsync() / getSupabaseUser().
+ */
+export function allUsers(): User[] {
+  if (!isBrowser()) return [];
+
+  const users: User[] = [];
+  const currentId = window.localStorage.getItem(DEVICE_KEY);
+
+  if (currentId?.startsWith("gst_")) {
+    users.push({
+      id: currentId,
+      name: "Guest",
+      kind: "guest",
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  return users;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Local prototype couple storage                                             */
 /* -------------------------------------------------------------------------- */
 
@@ -97,9 +129,6 @@ function putCouple(couple: Couple) {
 /* Supabase profile                                                           */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Loads the currently authenticated Supabase user and their LELA profile.
- */
 export async function getSupabaseUser(): Promise<User | null> {
   const {
     data: { user: authUser },
@@ -137,12 +166,6 @@ export async function getSupabaseUser(): Promise<User | null> {
 /* Current user                                                               */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Asynchronously gets the real current user.
- *
- * Supabase Auth is the source of truth for members.
- * Guests continue to use localStorage.
- */
 export async function currentUserAsync(): Promise<User | null> {
   const {
     data: { session },
@@ -168,12 +191,6 @@ export async function currentUserAsync(): Promise<User | null> {
   return null;
 }
 
-/**
- * Returns the current Supabase auth user ID when available.
- *
- * This function is intentionally asynchronous because Supabase Auth
- * is asynchronous.
- */
 export async function currentUserIdAsync(): Promise<string | null> {
   const {
     data: { user },
@@ -199,8 +216,7 @@ export async function currentUserIdAsync(): Promise<string | null> {
  *
  * Existing prototype couple code still expects a synchronous user ID.
  *
- * For Supabase members, the ID is mirrored into DEVICE_KEY after
- * successful authentication. Supabase remains the real source of truth.
+ * Supabase members are mirrored into DEVICE_KEY after authentication.
  */
 export function currentUserId(): string | null {
   if (!isBrowser()) return null;
@@ -233,12 +249,6 @@ export function currentUser(): User | null {
   return null;
 }
 
-/**
- * Mirrors the authenticated user ID locally for the existing prototype
- * couple layer.
- *
- * This does NOT replace Supabase Auth.
- */
 export function setCurrentUser(id: string | null) {
   if (!isBrowser()) return;
 
@@ -318,12 +328,6 @@ export async function signUp(input: {
     };
   }
 
-  /*
-   * The profiles table already exists.
-   *
-   * We create/update the profile here rather than creating another
-   * database table or trigger.
-   */
   const { error: profileError } = await supabase
     .from("profiles")
     .upsert(
@@ -406,12 +410,6 @@ export async function signIn(
     };
   }
 
-  /*
-   * Make sure a profile exists.
-   *
-   * This also makes the application resilient if a user was created
-   * before the profile creation logic existed.
-   */
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, created_at")
@@ -498,9 +496,6 @@ export function createGuest(name = "Guest"): User {
   return user;
 }
 
-/**
- * Converts the local guest into a real Supabase member account.
- */
 export async function convertGuest(input: {
   name: string;
   email: string;
@@ -705,10 +700,6 @@ export function lookupInvite(
     };
   }
 
-  /*
-   * Host information is optional because the host may now be a
-   * Supabase-authenticated member rather than a localStorage user.
-   */
   let host: User | null = null;
 
   if (couple.aId.startsWith("gst_")) {
@@ -831,12 +822,6 @@ export function partnerOf(
     };
   }
 
-  /*
-   * Supabase members cannot be synchronously loaded here.
-   *
-   * The useAccount hook will handle the authenticated member
-   * separately in the next migration step.
-   */
   return null;
 }
 
