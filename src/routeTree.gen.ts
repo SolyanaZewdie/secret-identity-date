@@ -18,6 +18,7 @@ import { Route as GeneratingRouteImport } from './routes/generating'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as RecapRouteImport } from './routes/recap'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as BeginPartnerRouteImport } from './routes/begin.$partner'
 import { Route as RevealPartnerRouteImport } from './routes/reveal.$partner'
 
@@ -66,6 +67,11 @@ const RecapRoute = RecapRouteImport.update({
   path: '/recap',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeginPartnerRoute = BeginPartnerRouteImport.update({
   id: '/begin/$partner',
   path: '/begin/$partner',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
   '/recap': typeof RecapRoute
+  '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
   '/reveal/$partner': typeof RevealPartnerRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
   '/recap': typeof RecapRoute
+  '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
   '/reveal/$partner': typeof RevealPartnerRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/partner': typeof PartnerRoute
   '/recap': typeof RecapRoute
+  '/welcome': typeof WelcomeRoute
   '/begin/$partner': typeof BeginPartnerRoute
   '/reveal/$partner': typeof RevealPartnerRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/partner'
     | '/recap'
+    | '/welcome'
     | '/begin/$partner'
     | '/reveal/$partner'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/partner'
     | '/recap'
+    | '/welcome'
     | '/begin/$partner'
     | '/reveal/$partner'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/partner'
     | '/recap'
+    | '/welcome'
     | '/begin/$partner'
     | '/reveal/$partner'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   PartnerRoute: typeof PartnerRoute
   RecapRoute: typeof RecapRoute
+  WelcomeRoute: typeof WelcomeRoute
   BeginPartnerRoute: typeof BeginPartnerRoute
   RevealPartnerRoute: typeof RevealPartnerRoute
 }
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/begin/$partner': {
       id: '/begin/$partner'
       path: '/begin/$partner'
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   PartnerRoute: PartnerRoute,
   RecapRoute: RecapRoute,
+  WelcomeRoute: WelcomeRoute,
   BeginPartnerRoute: BeginPartnerRoute,
   RevealPartnerRoute: RevealPartnerRoute,
 }
