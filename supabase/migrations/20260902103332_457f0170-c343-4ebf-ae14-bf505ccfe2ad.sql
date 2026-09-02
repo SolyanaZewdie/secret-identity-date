@@ -1,0 +1,23 @@
+REVOKE ALL ON FUNCTION public.is_couple_member(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_couple_member(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.lela_generate_code() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_my_couple() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_my_couple() FROM anon;
+REVOKE ALL ON FUNCTION public.lela_create_invite() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_create_invite() FROM anon;
+REVOKE ALL ON FUNCTION public.lela_refresh_invite() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_refresh_invite() FROM anon;
+REVOKE ALL ON FUNCTION public.lela_lookup_invite(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_lookup_invite(text) FROM anon;
+REVOKE ALL ON FUNCTION public.lela_join_couple(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_join_couple(text) FROM anon;
+REVOKE ALL ON FUNCTION public.lela_leave_couple() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.lela_leave_couple() FROM anon;
+
+GRANT EXECUTE ON FUNCTION public.is_couple_member(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lela_my_couple() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lela_create_invite() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lela_refresh_invite() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lela_lookup_invite(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lela_join_couple(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lela_leave_couple() TO authenticated;
