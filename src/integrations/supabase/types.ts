@@ -14,13 +14,222 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      couples: {
+        Row: {
+          a_id: string
+          b_id: string | null
+          code: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          a_id: string
+          b_id?: string | null
+          code: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          a_id?: string
+          b_id?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      date_assignments: {
+        Row: {
+          character_id: string
+          created_at: string
+          date_id: string
+          id: string
+          missions: string[]
+          slot: string
+          user_id: string | null
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          date_id: string
+          id?: string
+          missions?: string[]
+          slot: string
+          user_id?: string | null
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          date_id?: string
+          id?: string
+          missions?: string[]
+          slot?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "date_assignments_date_id_fkey"
+            columns: ["date_id"]
+            isOneToOne: false
+            referencedRelation: "dates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dates: {
+        Row: {
+          again: string | null
+          archived: boolean
+          completed_missions: string[]
+          couple_id: string
+          created_at: string
+          creator_slot: string
+          ended: boolean
+          id: string
+          intensity: string
+          joined_a: boolean
+          joined_b: boolean
+          note: string | null
+          rating: number | null
+          revealed_a: boolean
+          revealed_b: boolean
+          scenario: Json | null
+          seen_a: boolean
+          seen_b: boolean
+          started: boolean
+          style: string
+          vibe: string
+        }
+        Insert: {
+          again?: string | null
+          archived?: boolean
+          completed_missions?: string[]
+          couple_id: string
+          created_at?: string
+          creator_slot: string
+          ended?: boolean
+          id?: string
+          intensity: string
+          joined_a?: boolean
+          joined_b?: boolean
+          note?: string | null
+          rating?: number | null
+          revealed_a?: boolean
+          revealed_b?: boolean
+          scenario?: Json | null
+          seen_a?: boolean
+          seen_b?: boolean
+          started?: boolean
+          style: string
+          vibe: string
+        }
+        Update: {
+          again?: string | null
+          archived?: boolean
+          completed_missions?: string[]
+          couple_id?: string
+          created_at?: string
+          creator_slot?: string
+          ended?: boolean
+          id?: string
+          intensity?: string
+          joined_a?: boolean
+          joined_b?: boolean
+          note?: string | null
+          rating?: number | null
+          revealed_a?: boolean
+          revealed_b?: boolean
+          scenario?: Json | null
+          seen_a?: boolean
+          seen_b?: boolean
+          started?: boolean
+          style?: string
+          vibe?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dates_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_couple_member: { Args: { _couple_id: string }; Returns: boolean }
+      lela_create_invite: {
+        Args: never
+        Returns: {
+          a_id: string
+          b_id: string
+          code: string
+          created_at: string
+          id: string
+          partner_name: string
+        }[]
+      }
+      lela_generate_code: { Args: never; Returns: string }
+      lela_join_couple: {
+        Args: { p_code: string }
+        Returns: {
+          couple_id: string
+          state: string
+        }[]
+      }
+      lela_leave_couple: { Args: never; Returns: undefined }
+      lela_lookup_invite: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          host_name: string
+          state: string
+        }[]
+      }
+      lela_my_couple: {
+        Args: never
+        Returns: {
+          a_id: string
+          b_id: string
+          code: string
+          created_at: string
+          id: string
+          partner_name: string
+        }[]
+      }
+      lela_refresh_invite: {
+        Args: never
+        Returns: {
+          a_id: string
+          b_id: string
+          code: string
+          created_at: string
+          id: string
+          partner_name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
