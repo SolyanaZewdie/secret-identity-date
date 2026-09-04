@@ -1,18 +1,14 @@
-
 import { supabase } from "../supabase";
 
 /**
  * LELA accounts, couples and pairing.
  *
- * Authentication is handled by Supabase Auth.
+ * Two modes live side by side:
  *
- * Member profiles are stored in the `profiles` table.
- *
- * Guests remain local-only for now.
- *
- * NOTE:
- * Couples are still using localStorage in this stage of the migration.
- * We will move couples to Supabase after authentication is working correctly.
+ * - Members  → Supabase Auth + the `profiles` / `couples` tables. Pairing works
+ *              across devices and survives refresh.
+ * - Guests   → the original local prototype flow (one device, one phone that
+ *              gets handed back and forth). Untouched on purpose.
  */
 
 export type AccountKind = "member" | "guest";
@@ -32,6 +28,9 @@ export type Couple = {
   bId: string | null;
   createdAt: string;
   expiresAt?: string;
+  /** Display name of the other partner (members only). */
+  partnerName?: string;
+  source: "cloud" | "local";
 };
 
 export type Slot = "A" | "B";
@@ -50,7 +49,6 @@ const isBrowser = () => typeof window !== "undefined";
 
 function read<T>(key: string, fallback: T): T {
   if (!isBrowser()) return fallback;
-
   try {
     const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -61,19 +59,16 @@ function read<T>(key: string, fallback: T): T {
 
 function write(key: string, value: unknown) {
   if (!isBrowser()) return;
-
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     /* Storage unavailable — prototype degrades gracefully. */
   }
-
   notifyChange();
 }
 
 export function notifyChange() {
   if (!isBrowser()) return;
-
   window.dispatchEvent(new Event("lela:change"));
 }
 
@@ -81,53 +76,38 @@ export function notifyChange() {
 /* Users                                                                      */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Compatibility helper for the prototype device switcher.
- *
- * Supabase members are not stored as a local collection anymore.
- * The only local user that can be reconstructed synchronously is a guest.
- *
- * The currently authenticated Supabase member is handled asynchronously
- * through currentUserAsync() / getSupabaseUser().
- */
+/** Guests are the only users that can be reconstructed synchronously. */
 export function allUsers(): User[] {
   if (!isBrowser()) return [];
-
-  const users: User[] = [];
   const currentId = window.localStorage.getItem(DEVICE_KEY);
-
   if (currentId?.startsWith("gst_")) {
-    users.push({
-      id: currentId,
-      name: "Guest",
-      kind: "guest",
-      createdAt: new Date().toISOString(),
-    });
+    return [
+      { id: currentId, name: "Guest", kind: "guest", createdAt: new Date().toISOString() },
+    ];
   }
-
-  return users;
+  return [];
 }
 
 /* -------------------------------------------------------------------------- */
-/* Local prototype couple storage                                             */
+/* Local (guest) couple storage                                               */
 /* -------------------------------------------------------------------------- */
 
 export function allCouples(): Couple[] {
-  return read<Couple[]>(COUPLES_KEY, []);
+  return read<Couple[]>(COUPLES_KEY, []).map((c) => ({ ...c, source: "local" }));
 }
 
 function putCouple(couple: Couple) {
-  const next = [
-    ...allCouples().filter((c) => c.id !== couple.id),
-    couple,
-  ];
-
-  write(COUPLES_KEY, next);
+  write(COUPLES_KEY, [...allCouples().filter((c) => c.id !== couple.id), couple]);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Supabase profile                                                           */
 /* -------------------------------------------------------------------------- */
+
+function metaName(meta: Record<string, unknown> | undefined): string | null {
+  const value = meta?.["display_name"];
+  return typeof value === "string" && value.trim() ? value : null;
+}
 
 export async function getSupabaseUser(): Promise<User | null> {
   const {
@@ -135,31 +115,28 @@ export async function getSupabaseUser(): Promise<User | null> {
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !authUser) {
-    return null;
-  }
+  if (authError || !authUser) return null;
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, created_at")
     .eq("id", authUser.id)
     .maybeSingle();
 
-  if (profileError) {
-    console.error("Failed to load profile:", profileError);
-  }
+  const email = authUser.email ?? null;
 
-  return {
+  const user: User = {
     id: authUser.id,
     name:
       profile?.display_name ||
-      authUser.user_metadata?.display_name ||
-      authUser.email?.split("@")[0] ||
+      metaName(authUser.user_metadata) ||
+      email?.split("@")[0] ||
       "LELA member",
     kind: "member",
-    email: authUser.email ?? undefined,
     createdAt: profile?.created_at ?? authUser.created_at,
   };
+
+  return email ? { ...user, email } : user;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -171,109 +148,48 @@ export async function currentUserAsync(): Promise<User | null> {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (session?.user) {
-    return getSupabaseUser();
+  if (session?.user) return getSupabaseUser();
+
+  return localGuest();
+}
+
+function localGuest(): User | null {
+  if (!isBrowser()) return null;
+  const guestId = window.localStorage.getItem(DEVICE_KEY);
+  if (guestId?.startsWith("gst_")) {
+    return { id: guestId, name: "Guest", kind: "guest", createdAt: new Date().toISOString() };
   }
-
-  if (isBrowser()) {
-    const guestId = window.localStorage.getItem(DEVICE_KEY);
-
-    if (guestId?.startsWith("gst_")) {
-      return {
-        id: guestId,
-        name: "Guest",
-        kind: "guest",
-        createdAt: new Date().toISOString(),
-      };
-    }
-  }
-
   return null;
 }
 
 export async function currentUserIdAsync(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    return user.id;
-  }
-
-  if (isBrowser()) {
-    const guestId = window.localStorage.getItem(DEVICE_KEY);
-
-    if (guestId?.startsWith("gst_")) {
-      return guestId;
-    }
-  }
-
-  return null;
+  const user = await currentUserAsync();
+  return user?.id ?? null;
 }
 
-/**
- * Temporary synchronous compatibility helper.
- *
- * Existing prototype couple code still expects a synchronous user ID.
- *
- * Supabase members are mirrored into DEVICE_KEY after authentication.
- */
+/** Synchronous helper — resolves guests only. Members use currentUserAsync(). */
 export function currentUserId(): string | null {
   if (!isBrowser()) return null;
-
   return window.localStorage.getItem(DEVICE_KEY);
 }
 
-/**
- * Temporary synchronous compatibility helper.
- *
- * Guests can be returned synchronously.
- * Supabase members should use currentUserAsync().
- */
+/** Synchronous helper — resolves guests only. Members use currentUserAsync(). */
 export function currentUser(): User | null {
-  if (!isBrowser()) return null;
-
-  const id = window.localStorage.getItem(DEVICE_KEY);
-
-  if (!id) return null;
-
-  if (id.startsWith("gst_")) {
-    return {
-      id,
-      name: "Guest",
-      kind: "guest",
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  return null;
+  return localGuest();
 }
 
 export function setCurrentUser(id: string | null) {
   if (!isBrowser()) return;
-
-  if (id) {
-    window.localStorage.setItem(DEVICE_KEY, id);
-  } else {
-    window.localStorage.removeItem(DEVICE_KEY);
-  }
-
+  if (id) window.localStorage.setItem(DEVICE_KEY, id);
+  else window.localStorage.removeItem(DEVICE_KEY);
   notifyChange();
 }
 
 /* -------------------------------------------------------------------------- */
-/* Sign up                                                                    */
+/* Auth                                                                       */
 /* -------------------------------------------------------------------------- */
 
-export type AuthResult =
-  | {
-      ok: true;
-      user: User;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
+export type AuthResult = { ok: true; user: User } | { ok: false; error: string };
 
 export async function signUp(input: {
   name: string;
@@ -283,194 +199,105 @@ export async function signUp(input: {
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
 
-  if (!name) {
-    return {
-      ok: false,
-      error: "Tell us what to call you.",
-    };
-  }
-
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return {
-      ok: false,
-      error: "That email doesn't look right.",
-    };
-  }
-
-  if (input.password.length < 6) {
-    return {
-      ok: false,
-      error: "Use at least 6 characters for your password.",
-    };
-  }
+  if (!name) return { ok: false, error: "Tell us what to call you." };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    return { ok: false, error: "That email doesn't look right." };
+  if (input.password.length < 6)
+    return { ok: false, error: "Use at least 6 characters for your password." };
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password: input.password,
-    options: {
-      data: {
-        display_name: name,
-      },
-    },
+    options: { data: { display_name: name } },
   });
 
-  if (error) {
+  if (error) return { ok: false, error: error.message };
+  if (!data.user) return { ok: false, error: "We couldn't create your account." };
+  if (!data.session)
     return {
       ok: false,
-      error: error.message,
+      error: "Check your email to confirm your account, then sign in.",
     };
-  }
-
-  if (!data.user) {
-    return {
-      ok: false,
-      error: "We couldn't create your account.",
-    };
-  }
 
   const { error: profileError } = await supabase
     .from("profiles")
-    .upsert(
-      {
-        id: data.user.id,
-        display_name: name,
-      },
-      {
-        onConflict: "id",
-      },
-    );
+    .upsert({ id: data.user.id, display_name: name }, { onConflict: "id" });
 
-  if (profileError) {
-    console.error("Failed to create profile:", profileError);
+  if (profileError) return { ok: false, error: profileError.message };
 
-    return {
-      ok: false,
-      error: profileError.message,
-    };
-  }
-
-  const user: User = {
-    id: data.user.id,
-    name,
-    kind: "member",
-    email,
-    createdAt: data.user.created_at,
-  };
-
-  setCurrentUser(user.id);
-
+  setCurrentUser(data.user.id);
   notifyChange();
 
   return {
     ok: true,
-    user,
+    user: { id: data.user.id, name, kind: "member", email, createdAt: data.user.created_at },
   };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Sign in                                                                    */
-/* -------------------------------------------------------------------------- */
-
-export async function signIn(
-  email: string,
-  password: string,
-): Promise<AuthResult> {
+export async function signIn(email: string, password: string): Promise<AuthResult> {
   const cleanEmail = email.trim().toLowerCase();
-
-  if (!cleanEmail) {
-    return {
-      ok: false,
-      error: "Enter your email.",
-    };
-  }
-
-  if (!password) {
-    return {
-      ok: false,
-      error: "Enter your password.",
-    };
-  }
+  if (!cleanEmail) return { ok: false, error: "Enter your email." };
+  if (!password) return { ok: false, error: "Enter your password." };
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: cleanEmail,
     password,
   });
 
-  if (error) {
-    return {
-      ok: false,
-      error: error.message,
-    };
-  }
-
-  if (!data.user) {
-    return {
-      ok: false,
-      error: "We couldn't sign you in.",
-    };
-  }
+  if (error) return { ok: false, error: error.message };
+  if (!data.user) return { ok: false, error: "We couldn't sign you in." };
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, created_at")
+    .select("display_name")
     .eq("id", data.user.id)
     .maybeSingle();
 
   if (!profile) {
-    const displayName =
-      data.user.user_metadata?.display_name ||
-      data.user.email?.split("@")[0] ||
-      "LELA member";
-
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert(
-        {
-          id: data.user.id,
-          display_name: displayName,
-        },
-        {
-          onConflict: "id",
-        },
-      );
-
-    if (profileError) {
-      console.error("Failed to create missing profile:", profileError);
-    }
+    await supabase.from("profiles").upsert(
+      {
+        id: data.user.id,
+        display_name:
+          metaName(data.user.user_metadata) ?? data.user.email?.split("@")[0] ?? "LELA member",
+      },
+      { onConflict: "id" },
+    );
   }
 
   const user = await getSupabaseUser();
-
-  if (!user) {
-    return {
-      ok: false,
-      error: "Your account exists, but we couldn't load your profile.",
-    };
-  }
+  if (!user)
+    return { ok: false, error: "Your account exists, but we couldn't load your profile." };
 
   setCurrentUser(user.id);
-
   notifyChange();
 
-  return {
-    ok: true,
-    user,
-  };
+  return { ok: true, user };
 }
 
-/* -------------------------------------------------------------------------- */
-/* Sign out                                                                   */
-/* -------------------------------------------------------------------------- */
+export async function updateDisplayName(name: string): Promise<AuthResult> {
+  const clean = name.trim();
+  if (!clean) return { ok: false, error: "Tell us what to call you." };
+
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  if (!authUser) return { ok: false, error: "You're not signed in." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ display_name: clean })
+    .eq("id", authUser.id);
+
+  if (error) return { ok: false, error: error.message };
+
+  const user = await getSupabaseUser();
+  notifyChange();
+  return user ? { ok: true, user } : { ok: false, error: "Couldn't reload your profile." };
+}
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    console.error("Supabase sign out failed:", error);
-  }
-
+  await supabase.auth.signOut();
   setCurrentUser(null);
-
   notifyChange();
 }
 
@@ -479,9 +306,7 @@ export async function signOut() {
 /* -------------------------------------------------------------------------- */
 
 const guestId = () =>
-  `gst_${Date.now().toString(36)}${Math.random()
-    .toString(36)
-    .slice(2, 6)}`;
+  `gst_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export function createGuest(name = "Guest"): User {
   const user: User = {
@@ -490,9 +315,7 @@ export function createGuest(name = "Guest"): User {
     kind: "guest",
     createdAt: new Date().toISOString(),
   };
-
   setCurrentUser(user.id);
-
   return user;
 }
 
@@ -502,97 +325,123 @@ export async function convertGuest(input: {
   password: string;
 }): Promise<AuthResult> {
   const me = currentUser();
+  if (!me || me.kind !== "guest")
+    return { ok: false, error: "Nobody is signed in as a guest on this device." };
 
-  if (!me || me.kind !== "guest") {
-    return {
-      ok: false,
-      error: "Nobody is signed in as a guest on this device.",
-    };
-  }
-
-  return signUp({
-    name: input.name.trim() || me.name,
-    email: input.email,
-    password: input.password,
-  });
+  return signUp({ name: input.name.trim() || me.name, email: input.email, password: input.password });
 }
 
 /* -------------------------------------------------------------------------- */
-/* Couples                                                                    */
+/* Couples — shared helpers                                                   */
 /* -------------------------------------------------------------------------- */
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const id = (prefix: string) =>
-  `${prefix}_${Date.now().toString(36)}${Math.random()
-    .toString(36)
-    .slice(2, 6)}`;
+  `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 function makeCode(): string {
   let out = "";
-
   for (let i = 0; i < 6; i++) {
-    out +=
-      CODE_ALPHABET[
-        Math.floor(Math.random() * CODE_ALPHABET.length)
-      ];
+    out += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
   }
-
-  const taken = allCouples().some((c) => c.code === out);
-
-  return taken ? makeCode() : out;
-}
-
-export function coupleOf(
-  userId: string | null | undefined,
-): Couple | null {
-  if (!userId) return null;
-
-  return (
-    allCouples().find(
-      (c) => c.aId === userId || c.bId === userId,
-    ) ?? null
-  );
-}
-
-export function currentCouple(): Couple | null {
-  return coupleOf(currentUserId());
+  return allCouples().some((c) => c.code === out) ? makeCode() : out;
 }
 
 export function isExpired(couple: Couple): boolean {
-  return Boolean(
-    couple.expiresAt &&
-      new Date(couple.expiresAt).getTime() < Date.now(),
-  );
+  return Boolean(couple.expiresAt && new Date(couple.expiresAt).getTime() < Date.now());
 }
 
-export function slotOf(
-  couple: Couple | null,
-  userId: string | null,
-): Slot | null {
+export function slotOf(couple: Couple | null, userId: string | null): Slot | null {
+  if (!couple || !userId) return null;
+  if (couple.aId === userId) return "A";
+  if (couple.bId === userId) return "B";
+  return null;
+}
+
+export function isConnected(couple: Couple | null): boolean {
+  return Boolean(couple && couple.bId && !isExpired(couple));
+}
+
+export function partnerOf(couple: Couple | null, userId: string | null): User | null {
   if (!couple || !userId) return null;
 
-  if (couple.aId === userId) return "A";
+  const otherId = couple.aId === userId ? couple.bId : couple.aId;
+  if (!otherId) return null;
 
-  if (couple.bId === userId) return "B";
+  if (otherId.startsWith("gst_")) {
+    return { id: otherId, name: "Guest", kind: "guest", createdAt: new Date().toISOString() };
+  }
 
-  return null;
+  return {
+    id: otherId,
+    name: couple.partnerName || "Your partner",
+    kind: "member",
+    createdAt: couple.createdAt,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Couples — cloud row mapping                                                */
+/* -------------------------------------------------------------------------- */
+
+type CoupleRow = {
+  id: string;
+  code: string;
+  a_id: string;
+  b_id: string | null;
+  created_at: string;
+  partner_name?: string | null;
+};
+
+function mapCouple(row: CoupleRow): Couple {
+  const base: Couple = {
+    id: row.id,
+    code: row.code,
+    aId: row.a_id,
+    bId: row.b_id,
+    createdAt: row.created_at,
+    source: "cloud",
+  };
+  return row.partner_name ? { ...base, partnerName: row.partner_name } : base;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Couples — lookup                                                           */
+/* -------------------------------------------------------------------------- */
+
+/** Local (guest) couple lookup. Members must use coupleOfAsync(). */
+export function coupleOf(userId: string | null | undefined): Couple | null {
+  if (!userId) return null;
+  return allCouples().find((c) => c.aId === userId || c.bId === userId) ?? null;
+}
+
+export async function coupleOfAsync(user: User | null): Promise<Couple | null> {
+  if (!user) return null;
+  if (user.kind === "guest") return coupleOf(user.id);
+
+  const { data, error } = await supabase.rpc("lela_my_couple");
+  if (error || !data || data.length === 0) return null;
+  return mapCouple(data[0] as CoupleRow);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Invite creation                                                            */
 /* -------------------------------------------------------------------------- */
 
-export function createInvite(): Couple | null {
-  const me = currentUser();
-
+export async function createInvite(user?: User | null): Promise<Couple | null> {
+  const me = user ?? (await currentUserAsync());
   if (!me) return null;
 
-  const existing = coupleOf(me.id);
-
-  if (existing && !isExpired(existing)) {
-    return existing;
+  if (me.kind === "member") {
+    const { data, error } = await supabase.rpc("lela_create_invite");
+    if (error || !data || data.length === 0) return null;
+    notifyChange();
+    return mapCouple(data[0] as CoupleRow);
   }
+
+  const existing = coupleOf(me.id);
+  if (existing && !isExpired(existing)) return existing;
 
   const couple: Couple = {
     id: id("cpl"),
@@ -600,37 +449,30 @@ export function createInvite(): Couple | null {
     aId: me.id,
     bId: null,
     createdAt: new Date().toISOString(),
-    ...(me.kind === "guest"
-      ? {
-          expiresAt: new Date(
-            Date.now() + GUEST_TTL_MS,
-          ).toISOString(),
-        }
-      : {}),
+    expiresAt: new Date(Date.now() + GUEST_TTL_MS).toISOString(),
+    source: "local",
   };
 
   putCouple(couple);
-
   return couple;
 }
 
-export function refreshInvite(): Couple | null {
-  const me = currentUser();
-
+export async function refreshInvite(user?: User | null): Promise<Couple | null> {
+  const me = user ?? (await currentUserAsync());
   if (!me) return null;
 
-  const existing = coupleOf(me.id);
-
-  if (existing) {
-    write(
-      COUPLES_KEY,
-      allCouples().filter(
-        (c) => c.id !== existing.id,
-      ),
-    );
+  if (me.kind === "member") {
+    const { data, error } = await supabase.rpc("lela_refresh_invite");
+    if (error || !data || data.length === 0) return null;
+    notifyChange();
+    return mapCouple(data[0] as CoupleRow);
   }
 
-  return createInvite();
+  const existing = coupleOf(me.id);
+  if (existing) {
+    write(COUPLES_KEY, allCouples().filter((c) => c.id !== existing.id));
+  }
+  return createInvite(me);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -638,246 +480,118 @@ export function refreshInvite(): Couple | null {
 /* -------------------------------------------------------------------------- */
 
 export type InviteLookup =
-  | {
-      state: "invalid";
-    }
-  | {
-      state: "expired";
-      couple: Couple;
-    }
-  | {
-      state: "full";
-      couple: Couple;
-    }
-  | {
-      state: "mine";
-      couple: Couple;
-    }
-  | {
-      state: "open";
-      couple: Couple;
-      host: User | null;
-    };
+  | { state: "invalid" }
+  | { state: "expired" }
+  | { state: "full" }
+  | { state: "mine" }
+  | { state: "open"; code: string; hostName: string | null };
 
-export function lookupInvite(
-  rawCode: string,
-): InviteLookup {
+export async function lookupInvite(rawCode: string, user?: User | null): Promise<InviteLookup> {
   const code = rawCode.trim().toUpperCase();
+  const me = user ?? (await currentUserAsync());
 
-  const couple = allCouples().find(
-    (c) => c.code === code,
-  );
-
-  if (!couple) {
-    return {
-      state: "invalid",
-    };
+  if (me?.kind === "member") {
+    const { data, error } = await supabase.rpc("lela_lookup_invite", { p_code: code });
+    if (error || !data || data.length === 0) return { state: "invalid" };
+    const row = data[0] as { state: string; code: string | null; host_name: string | null };
+    if (row.state === "mine") return { state: "mine" };
+    if (row.state === "full") return { state: "full" };
+    if (row.state === "open")
+      return { state: "open", code: row.code ?? code, hostName: row.host_name };
+    return { state: "invalid" };
   }
 
-  if (isExpired(couple)) {
-    return {
-      state: "expired",
-      couple,
-    };
-  }
+  const couple = allCouples().find((c) => c.code === code);
+  if (!couple) return { state: "invalid" };
+  if (isExpired(couple)) return { state: "expired" };
 
-  const meId = currentUserId();
+  const meId = me?.id ?? currentUserId();
+  if (meId && (couple.aId === meId || couple.bId === meId)) return { state: "mine" };
+  if (couple.bId) return { state: "full" };
 
-  if (
-    meId &&
-    (couple.aId === meId || couple.bId === meId)
-  ) {
-    return {
-      state: "mine",
-      couple,
-    };
-  }
-
-  if (couple.bId) {
-    return {
-      state: "full",
-      couple,
-    };
-  }
-
-  let host: User | null = null;
-
-  if (couple.aId.startsWith("gst_")) {
-    host = {
-      id: couple.aId,
-      name: "Guest",
-      kind: "guest",
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  return {
-    state: "open",
-    couple,
-    host,
-  };
+  return { state: "open", code: couple.code, hostName: "Guest" };
 }
 
 /* -------------------------------------------------------------------------- */
 /* Join couple                                                                */
 /* -------------------------------------------------------------------------- */
 
-export type JoinResult =
-  | {
-      ok: true;
-      couple: Couple;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
+export type JoinResult = { ok: true; couple: Couple } | { ok: false; error: string };
 
-export function joinCouple(
-  rawCode: string,
-): JoinResult {
-  const me = currentUser();
+export async function joinCouple(rawCode: string, user?: User | null): Promise<JoinResult> {
+  const me = user ?? (await currentUserAsync());
+  if (!me) return { ok: false, error: "Nobody is on this device yet." };
 
-  if (!me) {
-    return {
-      ok: false,
-      error: "Nobody is on this device yet.",
-    };
+  if (me.kind === "member") {
+    const { data, error } = await supabase.rpc("lela_join_couple", {
+      p_code: rawCode.trim().toUpperCase(),
+    });
+
+    if (error) return { ok: false, error: error.message };
+
+    const row = (data?.[0] ?? null) as { state: string; couple_id: string | null } | null;
+    if (!row || row.state === "invalid")
+      return { ok: false, error: "That invite doesn't seem to work." };
+    if (row.state === "full") return { ok: false, error: "That couple already has two people." };
+
+    const couple = await coupleOfAsync(me);
+    notifyChange();
+    return couple
+      ? { ok: true, couple }
+      : { ok: false, error: "We paired you but couldn't load the couple." };
   }
 
-  const found = lookupInvite(rawCode);
+  const found = await lookupInvite(rawCode, me);
+  if (found.state === "invalid") return { ok: false, error: "That invite doesn't seem to work." };
+  if (found.state === "expired") return { ok: false, error: "This invitation has expired." };
+  if (found.state === "full") return { ok: false, error: "That couple already has two people." };
 
-  if (found.state === "invalid") {
-    return {
-      ok: false,
-      error: "That invite doesn't seem to work.",
-    };
-  }
+  const existing = coupleOf(me.id);
+  if (found.state === "mine")
+    return existing
+      ? { ok: true, couple: existing }
+      : { ok: false, error: "That invite doesn't seem to work." };
 
-  if (found.state === "expired") {
-    return {
-      ok: false,
-      error: "This invitation has expired.",
-    };
-  }
+  const target = allCouples().find((c) => c.code === found.code);
+  if (!target) return { ok: false, error: "That invite doesn't seem to work." };
 
-  if (found.state === "full") {
-    return {
-      ok: false,
-      error: "That couple already has two people.",
-    };
-  }
+  if (existing && existing.id !== target.id) await leaveCouple(me);
 
-  if (found.state === "mine") {
-    return {
-      ok: true,
-      couple: found.couple,
-    };
-  }
-
-  const previous = coupleOf(me.id);
-
-  if (
-    previous &&
-    previous.id !== found.couple.id
-  ) {
-    leaveCouple();
-  }
-
-  const joined: Couple = {
-    ...found.couple,
-    bId: me.id,
-  };
-
+  const joined: Couple = { ...target, bId: me.id };
   putCouple(joined);
-
-  return {
-    ok: true,
-    couple: joined,
-  };
-}
-
-/* -------------------------------------------------------------------------- */
-/* Partner                                                                    */
-/* -------------------------------------------------------------------------- */
-
-export function partnerOf(
-  couple: Couple | null,
-  userId: string | null,
-): User | null {
-  if (!couple || !userId) return null;
-
-  const otherId =
-    couple.aId === userId
-      ? couple.bId
-      : couple.aId;
-
-  if (!otherId) return null;
-
-  if (otherId.startsWith("gst_")) {
-    return {
-      id: otherId,
-      name: "Guest",
-      kind: "guest",
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  return null;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Connection state                                                           */
-/* -------------------------------------------------------------------------- */
-
-export function isConnected(
-  couple: Couple | null,
-): boolean {
-  return Boolean(
-    couple &&
-      couple.bId &&
-      !isExpired(couple),
-  );
+  return { ok: true, couple: joined };
 }
 
 /* -------------------------------------------------------------------------- */
 /* Leave couple                                                               */
 /* -------------------------------------------------------------------------- */
 
-export function leaveCouple() {
-  const me = currentUserId();
-  const couple = coupleOf(me);
+export async function leaveCouple(user?: User | null) {
+  const me = user ?? (await currentUserAsync());
+  if (!me) return;
 
-  if (!couple || !me) return;
+  if (me.kind === "member") {
+    await supabase.rpc("lela_leave_couple");
+    notifyChange();
+    return;
+  }
 
-  const remaining = allCouples().filter(
-    (c) => c.id !== couple.id,
-  );
+  const couple = coupleOf(me.id);
+  if (!couple) return;
 
-  if (couple.aId === me && !couple.bId) {
+  const remaining = allCouples().filter((c) => c.id !== couple.id);
+
+  if (couple.aId === me.id && !couple.bId) {
     write(COUPLES_KEY, remaining);
     return;
   }
 
-  if (couple.aId === me && couple.bId) {
-    write(COUPLES_KEY, [
-      ...remaining,
-      {
-        ...couple,
-        aId: couple.bId,
-        bId: null,
-      },
-    ]);
-
+  if (couple.aId === me.id && couple.bId) {
+    write(COUPLES_KEY, [...remaining, { ...couple, aId: couple.bId, bId: null }]);
     return;
   }
 
-  write(COUPLES_KEY, [
-    ...remaining,
-    {
-      ...couple,
-      bId: null,
-    },
-  ]);
+  write(COUPLES_KEY, [...remaining, { ...couple, bId: null }]);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -885,10 +599,7 @@ export function leaveCouple() {
 /* -------------------------------------------------------------------------- */
 
 export function joinUrl(code: string): string {
-  const origin = isBrowser()
-    ? window.location.origin
-    : "https://lela.app";
-
+  const origin = isBrowser() ? window.location.origin : "https://lela.app";
   return `${origin}/join/${code}`;
 }
 
@@ -902,21 +613,13 @@ export function inviteMessage(code: string): string {
 
 export function devModeEnabled(): boolean {
   if (!isBrowser()) return false;
-
-  return (
-    window.localStorage.getItem(DEV_KEY) === "1"
-  );
+  return window.localStorage.getItem(DEV_KEY) === "1";
 }
 
 export function setDevMode(on: boolean) {
   if (!isBrowser()) return;
-
-  if (on) {
-    window.localStorage.setItem(DEV_KEY, "1");
-  } else {
-    window.localStorage.removeItem(DEV_KEY);
-  }
-
+  if (on) window.localStorage.setItem(DEV_KEY, "1");
+  else window.localStorage.removeItem(DEV_KEY);
   notifyChange();
 }
 
@@ -926,16 +629,8 @@ export function setDevMode(on: boolean) {
 
 export function resetEverything() {
   if (!isBrowser()) return;
-
-  for (const key of [
-    COUPLES_KEY,
-    DEVICE_KEY,
-    "lela.current",
-    "lela.saved",
-    "lela.viewer",
-  ]) {
+  for (const key of [COUPLES_KEY, DEVICE_KEY, "lela.current", "lela.saved", "lela.viewer"]) {
     window.localStorage.removeItem(key);
   }
-
   notifyChange();
 }
